@@ -37,38 +37,86 @@ class DPAC:
             if file.read(4) != b'DPAC':
                 raise ValueError("Invalid magic header for DPAC")
 
-            # Read header
+            # Calculate actual TOC entry count with right shift by 3
             folder_file_count = struct.unpack('<I', file.read(4))[0]
+            toc_entry_count = folder_file_count >> 3
+            print(f"Adjusted TOC entry count (folders and files combined): {toc_entry_count}")
+
             total_file_size = struct.unpack('<I', file.read(4))[0]
             _footer_size = struct.unpack('<I', file.read(4))[0]  # Footer ignored here
-            
-            # Seek to TOC
-            file.seek(self.TOC_OFFSET)
-            folder_index = 0
 
-            while folder_index < folder_file_count:
-                # Read folder block
+            # Seek to TOC offset
+            file.seek(self.TOC_OFFSET)
+
+            entries_parsed = 0  # Track parsed TOC entries (folders and files)
+            parsed_folders = 0  # Track folders specifically
+
+            # Loop until the actual TOC entry count is reached
+            while entries_parsed < toc_entry_count:
+                # Read folder name (4 bytes)
                 folder_name = file.read(4).decode('ascii', errors='ignore').strip('\x00')
-                file_count = struct.unpack('<I', file.read(4))[0]  # Number of files in folder
+            
+                # Read file count and folder pointer as UINT16 values
+                raw_file_count = struct.unpack('<H', file.read(2))[0]  # UINT16 file count
+                file_count = raw_file_count >> 1  # Right bit shift by 1 to get the actual file count
+                folder_pointer = struct.unpack('<H', file.read(2))[0]  # UINT16 folder pointer
+
+                # If an empty folder name is encountered, exit
+                if not folder_name and file_count == 0:
+                    print(f"Empty or invalid entry detected; stopping parsing.")
+                    break
+
+                print(f"Parsing folder '{folder_name}' with {file_count} files (raw count: {raw_file_count}) at pointer {folder_pointer}")
+
+                # Initialize folder dictionary
                 folder = {'name': folder_name, 'files': []}
 
-                for _ in range(file_count):
-                    # Read file block sequentially
+                # Parse each file within this folder
+                for file_idx in range(file_count):
+                    current_pos = file.tell()
+                
+                    # Read file block and parse details
                     file_block = file.read(self.FILE_BLOCK_SIZE)
+                    if len(file_block) < self.FILE_BLOCK_SIZE:
+                        print("Incomplete file block detected; stopping parsing.")
+                        break  # Stop if the block length is incorrect
+
+                    # Extract file details
                     file_name = file_block[:4].decode('ascii', errors='ignore').strip('\x00')
-                    pointer = struct.unpack('<I', file_block[4:])[0] >> 0x0B
+                    file_pointer = struct.unpack('<I', file_block[4:])[0] >> 0x0B  # Use right shift on file pointer
                     file_length = struct.unpack('<H', file_block[6:8])[0]
 
-                    # Read the file's data
-                    current_pos = file.tell()
-                    file.seek(self.DATA_OFFSET + pointer)
+                    # If the pointer or length is zero, it's likely a placeholder entry
+                    if file_pointer == 0 and file_length == 0:
+                        print(f"Detected placeholder entry; stopping file parsing in folder '{folder_name}'.")
+                        break
+
+                    print(f"File: {file_name}, Pointer: {file_pointer}, Length: {file_length}")
+
+                    # Seek to file data and read content
+                    file.seek(self.DATA_OFFSET + file_pointer)
                     file_data = file.read(file_length)
-                    file.seek(current_pos)  # Move back to TOC position
-                    
+                    file.seek(current_pos + self.FILE_BLOCK_SIZE)  # Return to TOC for next file
+
+                    # Append file info to the folder
                     folder['files'].append({'name': file_name, 'data': file_data})
-                
+
+                    entries_parsed += 1  # Update entries count
+
+                # Add completed folder to the folder list
                 self.folders.append(folder)
-                folder_index += 1
+                parsed_folders += 1
+                entries_parsed += 1  # Increment for folder entry itself
+                print(f"Finished parsing folder '{folder_name}' with {file_count} files")
+
+                # Check if the TOC limit has been reached
+                if entries_parsed >= toc_entry_count:
+                    print(f"Reached end of TOC entries: {entries_parsed}/{toc_entry_count}")
+                    break
+
+
+
+
 
 class EPAC:
     def __init__(self, file_path): self.file_path = file_path
