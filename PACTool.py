@@ -114,10 +114,6 @@ class DPAC:
                     print(f"Reached end of TOC entries: {entries_parsed}/{toc_entry_count}")
                     break
 
-
-
-
-
 class EPAC:
     def __init__(self, file_path): self.file_path = file_path
     def load(self): print("Loading EPAC format...")
