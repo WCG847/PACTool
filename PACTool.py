@@ -11,6 +11,7 @@ from PIL import Image, ImageTk
 SHGFI_ICON = 0x000000100
 SHGFI_SMALLICON = 0x000000001
 
+
 # Struct for ctypes use with SHFILEINFO
 class SHFILEINFO(ctypes.Structure):
     _fields_ = [
@@ -41,7 +42,7 @@ class DPAC:
             if file.read(4) != b"DPAC":
                 raise ValueError("Invalid magic header for DPAC")
 
-            # Calculate actual TOC entry count with right shift by 3
+            # Calculate actual TOC entry count
             folder_file_count = struct.unpack("<I", file.read(4))[0]
             toc_entry_count = folder_file_count >> 3
             print(
@@ -54,86 +55,66 @@ class DPAC:
             # Seek to TOC offset
             file.seek(self.TOC_OFFSET)
 
-            entries_parsed = 0  # Track parsed TOC entries (folders and files)
-            parsed_folders = 0  # Track folders specifically
-
-            # Loop until the actual TOC entry count is reached
+            entries_parsed = 0
             while entries_parsed < toc_entry_count:
-                # Read folder name (4 bytes)
                 folder_name = (
-                    file.read(4).decode("ascii", errors="ignore").strip("\x00")
+                    file.read(4).decode("latin-1", errors="ignore").strip("\x00")
                 )
+                raw_file_count = struct.unpack("<H", file.read(2))[0]
+                file_count = raw_file_count >> 1
+                folder_pointer = struct.unpack("<H", file.read(2))[0]
 
-                # Read file count and folder pointer as UINT16 values
-                raw_file_count = struct.unpack("<H", file.read(2))[
-                    0
-                ]  # UINT16 file count
-                file_count = (
-                    raw_file_count >> 1
-                )  # Right bit shift by 1 to get the actual file count
-                folder_pointer = struct.unpack("<H", file.read(2))[
-                    0
-                ]  # UINT16 folder pointer
-
-                # If an empty folder name is encountered, exit
+                # Skip empty entries
                 if not folder_name and file_count == 0:
-                    print(f"Empty or invalid entry detected; stopping parsing.")
-                    break
+                    print("Empty entry detected; skipping.")
+                    entries_parsed += 1
+                    continue
 
                 print(
                     f"Parsing folder '{folder_name}' with {file_count} files (raw count: {raw_file_count}) at pointer {folder_pointer}"
                 )
 
-                # Initialize folder dictionary
                 folder = {"name": folder_name, "files": []}
-
-                # Parse each file within this folder
                 for file_idx in range(file_count):
                     current_pos = file.tell()
-
-                    # Read file block and parse details
                     file_block = file.read(self.FILE_BLOCK_SIZE)
                     if len(file_block) < self.FILE_BLOCK_SIZE:
-                        print("Incomplete file block detected; stopping parsing.")
-                        break  # Stop if the block length is incorrect
-
-                    # Extract file details
-                    file_name = file_block[:4].decode("ascii", errors="ignore").strip("\x00")
-    
-                    # Interpret file pointer with DATA_OFFSET as base address
-                    raw_file_pointer = struct.unpack("<H", file_block[4:6])[0]  # Raw file pointer value
-                    file_pointer = (raw_file_pointer << 0x0B) + self.DATA_OFFSET  # Add base address
-    
-                    # File length remains shifted by 0x08 as before
-                    file_length = struct.unpack("<H", file_block[6:8])[0] << 0x08
-
-                    # If the pointer or length is zero, it's likely a placeholder entry
-                    if raw_file_pointer == 0 and file_length == 0:
-                        print(f"Detected placeholder entry; stopping file parsing in folder '{folder_name}'.")
+                        print(
+                            f"Incomplete file block detected in folder '{folder_name}'; stopping parsing."
+                        )
                         break
 
-                    print(f"File: {file_name}, Pointer: {file_pointer}, Length: {file_length}")
+                    file_name = (
+                        file_block[:4].decode("latin-1", errors="ignore").strip("\x00")
+                    )
+                    raw_file_pointer = struct.unpack("<H", file_block[4:6])[0]
+                    file_pointer = (raw_file_pointer << 0x0B) + self.DATA_OFFSET
+                    file_length = struct.unpack("<H", file_block[6:8])[0] << 0x08
 
-                    # Seek to file data and read content
+                    if raw_file_pointer == 0 and file_length == 0:
+                        print(
+                            f"Detected placeholder entry in '{folder_name}'; skipping this file."
+                        )
+                        continue
+
+                    print(
+                        f"File: {file_name}, Pointer: {file_pointer}, Length: {file_length}"
+                    )
                     file.seek(file_pointer)
                     file_data = file.read(file_length)
-                    file.seek(current_pos + self.FILE_BLOCK_SIZE)  # Return to TOC for next file
+                    file.seek(current_pos + self.FILE_BLOCK_SIZE)
 
-                    # Append file info to the folder
                     folder["files"].append({"name": file_name, "data": file_data})
+                    entries_parsed += 1
 
-                    entries_parsed += 1  # Update entries count
+                self.folders.append(folder)
 
-                print(
-                    f"Finished parsing folder '{folder_name}' with {file_count} files"
-                )
-
-                # Check if the TOC limit has been reached
                 if entries_parsed >= toc_entry_count:
                     print(
                         f"Reached end of TOC entries: {entries_parsed}/{toc_entry_count}"
                     )
                     break
+
 
 class EPAC:
     def __init__(self, file_path):
@@ -280,14 +261,19 @@ class PACToolGUI:
 
     def display_pac_structure(self, pac_loader):
         root_node = self.tree.insert("", "end", text="Root", open=True)
-
         for folder in pac_loader.folders:
+            folder_name = folder.get("name", "Unknown")
+            if not folder_name:
+                print("Skipped empty folder entry.")
+                continue
+
             folder_node = self.tree.insert(
-                root_node, "end", text=folder["name"], open=True
+                root_node, "end", text=folder_name, open=True
             )
             for file_info in folder["files"]:
-                file_node = self.tree.insert(folder_node, "end", text=file_info["name"])
-                self.add_icon(file_info["name"], file_node)
+                file_name = file_info.get("name", "Unnamed")
+                file_node = self.tree.insert(folder_node, "end", text=file_name)
+                self.add_icon(file_name, file_node)
 
     def add_icon(self, file_name, tree_node):
         ext = os.path.splitext(file_name)[1]
