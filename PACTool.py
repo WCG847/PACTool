@@ -98,41 +98,32 @@ class DPAC:
                         break  # Stop if the block length is incorrect
 
                     # Extract file details
-                    file_name = (
-                        file_block[:4].decode("ascii", errors="ignore").strip("\x00")
-                    )
-                    file_pointer = (
-                        struct.unpack("<I", file_block[4:])[0] >> 0x0B
-                    )  # Use right shift on file pointer
-                    file_length = struct.unpack("<H", file_block[6:8])[0]
+                    file_name = file_block[:4].decode("ascii", errors="ignore").strip("\x00")
+    
+                    # Interpret file pointer with DATA_OFFSET as base address
+                    raw_file_pointer = struct.unpack("<H", file_block[4:6])[0]  # Raw file pointer value
+                    file_pointer = (raw_file_pointer << 0x0B) + self.DATA_OFFSET  # Add base address
+    
+                    # File length remains shifted by 0x08 as before
+                    file_length = struct.unpack("<H", file_block[6:8])[0] << 0x08
 
                     # If the pointer or length is zero, it's likely a placeholder entry
-                    if file_pointer == 0 and file_length == 0:
-                        print(
-                            f"Detected placeholder entry; stopping file parsing in folder '{folder_name}'."
-                        )
+                    if raw_file_pointer == 0 and file_length == 0:
+                        print(f"Detected placeholder entry; stopping file parsing in folder '{folder_name}'.")
                         break
 
-                    print(
-                        f"File: {file_name}, Pointer: {file_pointer}, Length: {file_length}"
-                    )
+                    print(f"File: {file_name}, Pointer: {file_pointer}, Length: {file_length}")
 
                     # Seek to file data and read content
-                    file.seek(self.DATA_OFFSET + file_pointer)
+                    file.seek(file_pointer)
                     file_data = file.read(file_length)
-                    file.seek(
-                        current_pos + self.FILE_BLOCK_SIZE
-                    )  # Return to TOC for next file
+                    file.seek(current_pos + self.FILE_BLOCK_SIZE)  # Return to TOC for next file
 
                     # Append file info to the folder
                     folder["files"].append({"name": file_name, "data": file_data})
 
                     entries_parsed += 1  # Update entries count
 
-                # Add completed folder to the folder list
-                self.folders.append(folder)
-                parsed_folders += 1
-                entries_parsed += 1  # Increment for folder entry itself
                 print(
                     f"Finished parsing folder '{folder_name}' with {file_count} files"
                 )
@@ -143,7 +134,6 @@ class DPAC:
                         f"Reached end of TOC entries: {entries_parsed}/{toc_entry_count}"
                     )
                     break
-
 
 class EPAC:
     def __init__(self, file_path):
