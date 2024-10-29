@@ -125,11 +125,86 @@ class EPAC:
 
 
 class EPK8:
+    TOC_OFFSET = 0x800
+    DATA_OFFSET = 0x4000
+    FOLDER_BLOCK_SIZE = 0x0C  # 12 bytes per folder entry
+    FILE_BLOCK_SIZE = 0x10
+
     def __init__(self, file_path):
         self.file_path = file_path
+        self.folders = []
 
     def load(self):
-        print("Loading EPK8 format...")
+        with open(self.file_path, "rb") as file:
+            if file.read(4) != b"EPK8":
+                raise ValueError("Invalid magic header for EPK8")
+
+            # Calculate actual TOC entry count
+            folder_file_count = struct.unpack("<I", file.read(4))[0]
+            toc_entry_count = (folder_file_count >> 4) + 1
+            print(f"Adjusted TOC entry count (folders and files combined): {toc_entry_count}")
+
+            total_file_size = struct.unpack("<I", file.read(4))[0]
+            _footer_size = struct.unpack("<I", file.read(4))[0]  # Footer ignored here
+
+            # Seek to TOC offset
+            file.seek(self.TOC_OFFSET)
+
+            entries_parsed = 0
+            while entries_parsed < toc_entry_count:
+                # Read exactly 12 bytes for each folder entry
+                folder_entry = file.read(self.FOLDER_BLOCK_SIZE)
+                if len(folder_entry) < self.FOLDER_BLOCK_SIZE:
+                    print("Incomplete folder entry detected; stopping parsing.")
+                    break
+
+                # Parse fields from the 12-byte folder entry
+                folder_name = folder_entry[:4].decode("latin-1", errors="ignore").strip("\x00")
+                raw_file_count = struct.unpack("<H", folder_entry[4:6])[0]
+                file_count = raw_file_count >> 2
+                folder_pointer = struct.unpack("<H", folder_entry[6:8])[0]
+                UNK1 = struct.unpack("<I", folder_entry[8:12])[0]  # 4 bytes for UNK1
+                
+                # Debug print to check values
+                print(f"Parsing folder '{folder_name}', file count: {file_count}, pointer: {folder_pointer}, UNK1: {UNK1}")
+
+                # Skip empty entries
+                if not folder_name and file_count == 0:
+                    print("Empty entry detected; skipping.")
+                    entries_parsed += 1
+                    continue
+
+                folder = {"name": folder_name, "files": []}
+                for file_idx in range(file_count):
+                    current_pos = file.tell()
+                    file_block = file.read(self.FILE_BLOCK_SIZE)
+                    if len(file_block) < self.FILE_BLOCK_SIZE:
+                        print(f"Incomplete file block detected in folder '{folder_name}'; stopping parsing.")
+                        break
+
+                    # Parse file details from the 16-byte file block
+                    file_name = file_block[:8].decode("latin-1", errors="ignore").strip("\x00")
+                    raw_file_pointer = struct.unpack("<I", file_block[8:12])[0]
+                    file_pointer = (raw_file_pointer << 0x0B) + self.DATA_OFFSET
+                    file_length = struct.unpack("<I", file_block[12:16])[0] << 0x08
+
+                    if raw_file_pointer == 0 and file_length == 0:
+                        print(f"Detected placeholder entry in '{folder_name}'; skipping this file.")
+                        continue
+
+                    print(f"File: {file_name}, Pointer: {file_pointer}, Length: {file_length}")
+                    file.seek(file_pointer)
+                    file_data = file.read(file_length)
+                    file.seek(current_pos + self.FILE_BLOCK_SIZE)
+
+                    folder["files"].append({"name": file_name, "data": file_data})
+                    entries_parsed += 1
+
+                self.folders.append(folder)
+
+                if entries_parsed >= toc_entry_count:
+                    print(f"Reached end of TOC entries: {entries_parsed}/{toc_entry_count}")
+                    break
 
 
 class DPK8:
