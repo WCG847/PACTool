@@ -262,6 +262,36 @@ class SHDC:
     def load(self):
         print("Loading SHDC format...")
 
+class MPQ:
+    TOC_OFFSET = 0x0C
+
+    def __init__(self, file_path):
+        self.file_path = file_path
+        self.folders = []
+
+    def load(self):
+        with open(self.file_path, "rb") as file:
+            if file.read(3) != b"MPQ":
+                raise ValueError("Invalid magic header for MPQ")
+
+            # Seek to TOC offset
+            file.seek(self.TOC_OFFSET)
+
+            entries_parsed = 0
+            while entries_parsed < file_count:
+                file_count = struct.unpack(">I", file.read(4))[0]
+
+
+                # Skip empty entries
+                if file_count == 0:
+                    print("Empty entry detected; skipping.")
+                    entries_parsed += 1
+                    continue
+
+                print(
+                    f"{file_count} files"
+                )
+
 
 class PACTool:
     HEADER_MAP = {
@@ -273,6 +303,7 @@ class PACTool:
         b"SHDC": SHDC,
         b"PAC ": PAC,
         b"PACH": PACH,
+        b"MPQ": MPQ,
     }
 
     @staticmethod
@@ -338,7 +369,7 @@ class PACToolGUI:
 
     def open_pac_file(self):
         file_path = filedialog.askopenfilename(
-            filetypes=[("Yuke's Package Files", "*.pac")]
+            filetypes=[("Yuke's Package Files", "*.pac, *.mpq")]
         )
         if file_path:
             for item in self.tree.get_children():
