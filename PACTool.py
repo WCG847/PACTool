@@ -369,7 +369,7 @@ class PACToolGUI:
 
     def open_pac_file(self):
         file_path = filedialog.askopenfilename(
-            filetypes=[("Yuke's Package Files", "*.pac, *.mpq")]
+            filetypes=[("Yuke's Package Files", "*.pac"), ("Yuke's Package Files", "*.mpq")]
         )
         if file_path:
             for item in self.tree.get_children():
