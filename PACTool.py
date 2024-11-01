@@ -61,8 +61,12 @@ class DPAC:
                     file.read(4).decode("latin-1", errors="ignore").strip("\x00")
                 )
                 raw_file_count = struct.unpack("<H", file.read(2))[0]
-                file_count = raw_file_count >> 1
+                # Use only the lower 7 bits for file count
+                file_count = raw_file_count & 0x7F  
                 folder_pointer = struct.unpack("<H", file.read(2))[0]
+
+                # Check if we should interpret filenames as UINT16 IDs and use 4-byte file blocks
+                use_numeric_ids = (raw_file_count & 0x80) != 0
 
                 # Skip empty entries
                 if not folder_name and file_count == 0:
@@ -75,23 +79,37 @@ class DPAC:
                 )
 
                 folder = {"name": folder_name, "files": []}
+                current_pointer = self.DATA_OFFSET  # Start file pointer at DATA_OFFSET
+
                 for file_idx in range(file_count):
                     current_pos = file.tell()
-                    file_block = file.read(self.FILE_BLOCK_SIZE)
-                    if len(file_block) < self.FILE_BLOCK_SIZE:
+
+                    # Adjust block size based on `use_numeric_ids`
+                    block_size = 4 if use_numeric_ids else self.FILE_BLOCK_SIZE
+                    file_block = file.read(block_size)
+                    
+                    if len(file_block) < block_size:
                         print(
                             f"Incomplete file block detected in folder '{folder_name}'; stopping parsing."
                         )
                         break
 
-                    file_name = (
-                        file_block[:4].decode("latin-1", errors="ignore").strip("\x00")
-                    )
-                    raw_file_pointer = struct.unpack("<H", file_block[4:6])[0]
-                    file_pointer = (raw_file_pointer << 0x0B) + self.DATA_OFFSET
-                    file_length = struct.unpack("<H", file_block[6:8])[0] << 0x08
+                    if use_numeric_ids:
+                        # Interpret 4-byte block: 2 bytes for numerical ID, 2 bytes for length
+                        file_name = struct.unpack("<H", file_block[:2])[0]
+                        file_length = struct.unpack("<H", file_block[2:4])[0] << 0x08
+                        file_pointer = current_pointer
+                        current_pointer += file_length  # Update pointer based on file length
+                    else:
+                        # Interpret 8-byte block: 4 bytes for ASCII name, 2 bytes for pointer, 2 bytes for length
+                        file_name = (
+                            file_block[:4].decode("latin-1", errors="ignore").strip("\x00")
+                        )
+                        raw_file_pointer = struct.unpack("<H", file_block[4:6])[0]
+                        file_pointer = (raw_file_pointer << 0x0B) + self.DATA_OFFSET
+                        file_length = struct.unpack("<H", file_block[6:8])[0] << 0x08
 
-                    if raw_file_pointer == 0 and file_length == 0:
+                    if not file_length:
                         print(
                             f"Detected placeholder entry in '{folder_name}'; skipping this file."
                         )
@@ -102,7 +120,7 @@ class DPAC:
                     )
                     file.seek(file_pointer)
                     file_data = file.read(file_length)
-                    file.seek(current_pos + self.FILE_BLOCK_SIZE)
+                    file.seek(current_pos + block_size)
 
                     folder["files"].append({"name": file_name, "data": file_data})
                     entries_parsed += 1
