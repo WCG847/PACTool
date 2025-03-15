@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>1ec84663-0d15-4433-aa63-b8b111b3136f</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>Yukes\Package\PAC\PAC.py</StartupFile>
+    <StartupFile>GUI\Main_Window.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -39,6 +39,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Anchor\File_Package\FPK\FPK.py" />
+    <Compile Include="GUI\Main_Window.py" />
     <Compile Include="Yukes\Package\PAC\PAC.py" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />

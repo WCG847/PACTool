@@ -72,7 +72,8 @@ class CData:
     def GetData(self):
         self.PAC.seek(self.Data_TBL)
         for entry in self.FileEntries:
-            self.PAC.seek(entry["RVA"])
-            entry["Data"] = self.PAC.read(entry["Size"])
+            actual_offset = self.Data_TBL + entry["RVA"]  # Fix: Adjust for relative addressing
+            self.PAC.seek(actual_offset)  # Seek to the correct data location
+            entry["Data"] = self.PAC.read(entry["RAWSize"])  # Read file contents
 
         return self.FileEntries
