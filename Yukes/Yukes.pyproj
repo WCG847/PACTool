@@ -2,16 +2,16 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>1ec84663-0d15-4433-aa63-b8b111b3136f</ProjectGuid>
+    <ProjectGuid>5535ecee-2b19-4b4a-9900-7e7fe81c9c7a</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>GUI\Main_Window.py</StartupFile>
+    <StartupFile>
+    </StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
-    <Name>PACTool</Name>
-    <RootNamespace>PACTool</RootNamespace>
-    <IsWindowsApplication>True</IsWindowsApplication>
+    <Name>Yukes</Name>
+    <RootNamespace>Yukes</RootNamespace>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -22,25 +22,8 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Folder Include="Anchor\" />
-    <Folder Include="Anchor\File_Package\" />
-    <Folder Include="Anchor\File_Package\FPK\" />
-    <Folder Include="GUI\" />
-    <Folder Include="Yukes\" />
-    <Folder Include="Yukes\Directory_Package\" />
-    <Folder Include="Yukes\Directory_Package\DPAC\" />
-    <Folder Include="Yukes\Directory_Package\DIP\" />
-    <Folder Include="Yukes\Material_Package\" />
-    <Folder Include="Yukes\Material_Package\MPC\" />
-    <Folder Include="Yukes\Package\PAC\" />
-    <Folder Include="Yukes\Texture_Package\" />
-    <Folder Include="Yukes\Package\" />
-    <Folder Include="Yukes\Texture_Package\TEX\" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Anchor\File_Package\FPK\FPK.py" />
-    <Compile Include="GUI\Main_Window.py" />
-    <Compile Include="Yukes\Package\PAC\PAC.py" />
+    <Compile Include="cdata.py" />
+    <Compile Include="cfile.py" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
