@@ -9,7 +9,7 @@ from io import BytesIO
 class PacViewerApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("PAC/DPAC Viewer - WinRAR Cursed Edition")
+        self.root.title("PAC/DPAC Viewer")
         self.file_list = []
 
         self.tree = ttk.Treeview(root, columns=('Index', 'Size', 'Pointer', 'Type', 'VFS'), show='headings')
