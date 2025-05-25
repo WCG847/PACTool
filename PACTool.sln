@@ -7,6 +7,14 @@ Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "Yukes", "Yukes\Yukes.pyproj
 EndProject
 Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "Anchor", "Anchor\Anchor.pyproj", "{E2FFDDF3-4CAB-4C0B-AD98-6A73BCDB43F2}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6EE4D7F9-2EF7-4FD7-8AC8-8960E63A2654}"
+	ProjectSection(SolutionItems) = preProject
+		.env = .env
+		GUI\__init__.py = GUI\__init__.py
+	EndProjectSection
+EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "GUI", "GUI\GUI.pyproj", "{C6FE36C0-1EDE-4BA5-B4C3-09C33D228F33}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,6 +25,8 @@ Global
 		{5535ECEE-2B19-4B4A-9900-7E7FE81C9C7A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E2FFDDF3-4CAB-4C0B-AD98-6A73BCDB43F2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{E2FFDDF3-4CAB-4C0B-AD98-6A73BCDB43F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C6FE36C0-1EDE-4BA5-B4C3-09C33D228F33}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C6FE36C0-1EDE-4BA5-B4C3-09C33D228F33}.Release|Any CPU.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
