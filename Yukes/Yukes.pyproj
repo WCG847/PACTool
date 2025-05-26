@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>5535ecee-2b19-4b4a-9900-7e7fe81c9c7a</ProjectGuid>
+    <ProjectGuid>e11763c9-d2e8-421f-81c0-7aa51c29c3e3</ProjectGuid>
     <ProjectHome>.</ProjectHome>
     <StartupFile>
     </StartupFile>
@@ -12,10 +12,7 @@
     <OutputPath>.</OutputPath>
     <Name>Yukes</Name>
     <RootNamespace>Yukes</RootNamespace>
-    <LaunchProvider>Standard Python launcher</LaunchProvider>
-    <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
-    <Environment>PYTHONPATH=..;
-</Environment>
+    <IsWindowsApplication>False</IsWindowsApplication>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -26,9 +23,11 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="cdata.py" />
+    <Compile Include="CBootUpLoader.py" />
+    <Compile Include="CData.py" />
     <Compile Include="cfile.py" />
-    <Compile Include="__init__.py" />
+    <Compile Include="ctim2.py" />
+    <Compile Include="InitDevice.py" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
