@@ -7,7 +7,8 @@ class CData:
 	def __init__(self, file):
 		if file is None:
 			self.file = DPAC.CacheRead()
-		self.file = file
+		else:
+			self.file = file
 
 		self.SetAdr()
 
