@@ -2,8 +2,13 @@ from mmap import mmap
 from struct import unpack, pack
 
 class CFile:
-	m_nSector = bytearray(512)
-	m_CashEnt = bytearray(10240)
-	m_FilePos = bytearray(16)
-	m_HeadBuf = bytearray(65536)
+	def __init__(self):
+		self.Sector = bytearray(512)
+		self.CacheEnt = bytearray(10240)
+		self.FilePos = bytearray(16)
+		self.HeadBuf = bytearray(65536)
+		self.Queue = bytearray(0x4000)
+
+	def Start(self, eDevice = 1):
+		self.ReadDevice = eDevice
 
