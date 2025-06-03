@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.11.35431.28
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "Yukes", "Yukes\Yukes.pyproj", "{E11763C9-D2E8-421F-81C0-7AA51C29C3E3}"
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "PACTool", "PACTool.pyproj", "{4D1C6089-F1B2-4EBD-B63A-2AFA8CADBEE6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,8 +11,8 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{E11763C9-D2E8-421F-81C0-7AA51C29C3E3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E11763C9-D2E8-421F-81C0-7AA51C29C3E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D1C6089-F1B2-4EBD-B63A-2AFA8CADBEE6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D1C6089-F1B2-4EBD-B63A-2AFA8CADBEE6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
