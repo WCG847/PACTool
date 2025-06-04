@@ -11,7 +11,7 @@ def FixSize(val):
 	return val
 
 def FixOffset(val):
-	val = (val << 11) + 0x4000
+	val = (val << 11) 
 	return val
 
 def ResolveIndices(file):
