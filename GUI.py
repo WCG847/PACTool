@@ -1,39 +1,52 @@
-import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
+from PyQt5.QtWidgets import (
+	QApplication, QMainWindow, QWidget, QVBoxLayout,
+	QPushButton, QFileDialog, QMessageBox, QHBoxLayout, QAbstractItemView, QTreeWidget,
+	QTreeWidgetItem
+)
+import sys, os
 from DPAC import DirectoryPackage
-import os
 
-class DPACGUI:
-	def __init__(self, root):
-		self.root = root
-		self.root.title("PACTool")
+class DPACGUI(QMainWindow):
+	def __init__(self):
+		super().__init__()
+		self.setWindowTitle("PACTool")
+		self.resize(800, 600)
+
 		self.dpac = DirectoryPackage()
 		self.contents = []
 
-		self.create_widgets()
+		self.init_ui()
 
-	def create_widgets(self):
-		# Top Frame
-		top_frame = tk.Frame(self.root)
-		top_frame.pack(fill=tk.X, padx=10, pady=5)
+	def init_ui(self):
+		main_widget = QWidget()
+		self.setCentralWidget(main_widget)
 
-		self.load_btn = tk.Button(top_frame, text="Load DPAC", command=self.load_dpac)
-		self.load_btn.pack(side=tk.LEFT)
+		main_layout = QVBoxLayout()
+		main_widget.setLayout(main_layout)
 
-		self.export_btn = tk.Button(top_frame, text="Export Selected", command=self.export_selected)
-		self.export_btn.pack(side=tk.LEFT, padx=10)
+		# Top control buttons
+		top_layout = QHBoxLayout()
+		self.load_btn = QPushButton("Load DPAC")
+		self.load_btn.clicked.connect(self.load_dpac)
 
-		# Treeview for file contents
-		self.tree = ttk.Treeview(self.root, columns=('Size', 'Offset'), show='tree headings')
-		self.tree.heading('#0', text='File/Folder')
-		self.tree.heading('Size', text='Size')
-		self.tree.heading('Offset', text='Offset')
-		self.tree.column('Size', width=100)
-		self.tree.column('Offset', width=100)
-		self.tree.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+		self.export_btn = QPushButton("Export Selected")
+		self.export_btn.clicked.connect(self.export_selected)
+
+		top_layout.addWidget(self.load_btn)
+		top_layout.addWidget(self.export_btn)
+		top_layout.addStretch()
+
+		main_layout.addLayout(top_layout)
+
+		# Tree view for contents
+		self.tree = QTreeWidget()
+		self.tree.setHeaderLabels(["File/Folder", "Size", "Offset"])
+		self.tree.setSelectionMode(QAbstractItemView.ExtendedSelection)
+		self.tree.setColumnWidth(0, 300)
+		main_layout.addWidget(self.tree)
 
 	def load_dpac(self):
-		file_path = filedialog.askopenfilename(title="Select DPAC File", filetypes=[("DPAC files", "*.pac"), ("All files", "*.*")])
+		file_path, _ = QFileDialog.getOpenFileName(self, "Select DPAC File", "", "DPAC files (*.pac);;All files (*.*)")
 		if not file_path:
 			return
 
@@ -42,35 +55,40 @@ class DPACGUI:
 			self.contents = self.dpac.Bin2Dict()
 			self.display_contents()
 		except Exception as e:
-			messagebox.showerror("Error", f"Failed to load DPAC file:\n{e}")
+			QMessageBox.critical(self, "Error", f"Failed to load DPAC file:\n{str(e)}")
 
 	def display_contents(self):
-		self.tree.delete(*self.tree.get_children())
+		self.tree.clear()
 		for folder, file_count, entries in self.contents:
-			folder_id = self.tree.insert('', 'end', text=folder, open=True)
+			folder_item = QTreeWidgetItem([folder])
+			folder_item.setExpanded(True)
 			for entry in entries:
-				name_or_id, size, offset = entry[0], entry[1], entry[2]
-				self.tree.insert(folder_id, 'end', text=name_or_id, values=(size, offset))
+				name_or_id = entry[0]
+				size = str(entry[1])
+				offset = str(entry[2])
+				file_item = QTreeWidgetItem([name_or_id, size, offset])
+				folder_item.addChild(file_item)
+			self.tree.addTopLevelItem(folder_item)
 
 	def export_selected(self):
-		selected = self.tree.selection()
-		if not selected:
-			messagebox.showinfo("Info", "No file selected.")
+		selected_items = self.tree.selectedItems()
+		if not selected_items:
+			QMessageBox.information(self, "Info", "No file selected.")
 			return
 
-		export_dir = filedialog.askdirectory(title="Select Export Directory")
+		export_dir = QFileDialog.getExistingDirectory(self, "Select Export Directory")
 		if not export_dir:
 			return
 
-		for item in selected:
-			parent = self.tree.parent(item)
+		export_count = 0
+		for item in selected_items:
+			parent = item.parent()
 			if not parent:
-				continue  # skip folders
-			folder_name = self.tree.item(parent, 'text')
-			name = self.tree.item(item, 'text')
-			size, offset = self.tree.item(item, 'values')
-			size = int(size)
-			offset = int(offset)
+				continue  # Skip folders
+			folder_name = parent.text(0)
+			name = item.text(0)
+			size = int(item.text(1))
+			offset = int(item.text(2))
 
 			self.dpac.Data.seek(offset)
 			data = self.dpac.Data.read(size)
@@ -79,10 +97,12 @@ class DPACGUI:
 			os.makedirs(out_folder, exist_ok=True)
 			with open(os.path.join(out_folder, name), 'wb') as f:
 				f.write(data)
+			export_count += 1
 
-		messagebox.showinfo("Success", "Export completed.")
+		QMessageBox.information(self, "Success", f"Export completed. Files exported: {export_count}")
 
-if __name__ == "__main__":
-	root = tk.Tk()
-	app = DPACGUI(root)
-	root.mainloop()
+if __name__ == '__main__':
+	app = QApplication(sys.argv)
+	window = DPACGUI()
+	window.show()
+	sys.exit(app.exec_())
