@@ -1,16 +1,26 @@
 from PyQt5.QtWidgets import (
-	QApplication, QMainWindow, QWidget, QVBoxLayout,
-	QPushButton, QFileDialog, QMessageBox, QHBoxLayout, QAbstractItemView, QTreeWidget,
-	QTreeWidgetItem
+	QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QFileDialog,
+	QMessageBox, QHBoxLayout, QAbstractItemView, QTreeWidget, QTreeWidgetItem,
+	QMenu, QFileIconProvider
 )
+from PyQt5.QtCore import Qt, QPoint
 import sys, os
 from DPAC import DirectoryPackage
+
+
+def human_readable_size(size):
+	for unit in ['B', 'KB', 'MB', 'GB']: # windows formatting
+		if size < 1024.0:
+			return f"{size:.2f} {unit}"
+		size /= 1024.0
+	return f"{size:.2f} TB"
+
 
 class DPACGUI(QMainWindow):
 	def __init__(self):
 		super().__init__()
 		self.setWindowTitle("PACTool")
-		self.resize(800, 600)
+		self.resize(900, 600)
 
 		self.dpac = DirectoryPackage()
 		self.contents = []
@@ -24,7 +34,7 @@ class DPACGUI(QMainWindow):
 		main_layout = QVBoxLayout()
 		main_widget.setLayout(main_layout)
 
-		# Top control buttons
+		# Control buttons
 		top_layout = QHBoxLayout()
 		self.load_btn = QPushButton("Load DPAC")
 		self.load_btn.clicked.connect(self.load_dpac)
@@ -35,15 +45,22 @@ class DPACGUI(QMainWindow):
 		top_layout.addWidget(self.load_btn)
 		top_layout.addWidget(self.export_btn)
 		top_layout.addStretch()
-
 		main_layout.addLayout(top_layout)
 
-		# Tree view for contents
+		# File explorer-style tree
 		self.tree = QTreeWidget()
-		self.tree.setHeaderLabels(["File/Folder", "Size", "Offset"])
+		self.tree.setHeaderLabels(["Name", "Size", "Offset"])
 		self.tree.setSelectionMode(QAbstractItemView.ExtendedSelection)
 		self.tree.setColumnWidth(0, 300)
+		self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
+		self.tree.customContextMenuRequested.connect(self.context_menu)
 		main_layout.addWidget(self.tree)
+
+		# Set default icons
+
+		icon_provider = QFileIconProvider()
+		self.folder_icon = icon_provider.icon(QFileIconProvider.Folder)
+		self.file_icon = icon_provider.icon(QFileIconProvider.File)
 
 	def load_dpac(self):
 		file_path, _ = QFileDialog.getOpenFileName(self, "Select DPAC File", "", "DPAC files (*.pac);;All files (*.*)")
@@ -61,13 +78,16 @@ class DPACGUI(QMainWindow):
 		self.tree.clear()
 		for folder, file_count, entries in self.contents:
 			folder_item = QTreeWidgetItem([folder])
+			folder_item.setIcon(0, self.folder_icon)
 			folder_item.setExpanded(True)
+
 			for entry in entries:
-				name_or_id = entry[0]
-				size = str(entry[1])
-				offset = str(entry[2])
-				file_item = QTreeWidgetItem([name_or_id, size, offset])
+				name, size, offset = entry
+				h_size = human_readable_size(size)
+				file_item = QTreeWidgetItem([name, h_size, str(offset)])
+				file_item.setIcon(0, self.file_icon)
 				folder_item.addChild(file_item)
+
 			self.tree.addTopLevelItem(folder_item)
 
 	def export_selected(self):
@@ -84,10 +104,11 @@ class DPACGUI(QMainWindow):
 		for item in selected_items:
 			parent = item.parent()
 			if not parent:
-				continue  # Skip folders
+				continue  # Skip top-level folders
+
 			folder_name = parent.text(0)
 			name = item.text(0)
-			size = int(item.text(1))
+			size = self.parse_size(item.text(1))  # convert back to int
 			offset = int(item.text(2))
 
 			self.dpac.Data.seek(offset)
@@ -100,6 +121,34 @@ class DPACGUI(QMainWindow):
 			export_count += 1
 
 		QMessageBox.information(self, "Success", f"Export completed. Files exported: {export_count}")
+
+	def parse_size(self, size_str):
+		# Reverse conversion from human-readable back to int bytes
+		multipliers = {'B': 1, 'KiB': 1024, 'MiB': 1024**2, 'GiB': 1024**3}
+		try:
+			value, unit = size_str.split()
+			return int(float(value) * multipliers.get(unit, 1))
+		except:
+			return int(size_str)
+
+	def context_menu(self, position: QPoint):
+		item = self.tree.itemAt(position)
+		if not item or not item.parent():
+			return  # Don't show menu on folders
+
+		menu = QMenu()
+		export_action = menu.addAction("Export")
+		info_action = menu.addAction("View Info")
+		action = menu.exec_(self.tree.viewport().mapToGlobal(position))
+
+		if action == export_action:
+			self.export_selected()
+		elif action == info_action:
+			name = item.text(0)
+			size = item.text(1)
+			offset = item.text(2)
+			QMessageBox.information(self, "File Info", f"Name: {name}\nSize: {size}\nOffset: {offset}")
+
 
 if __name__ == '__main__':
 	app = QApplication(sys.argv)
