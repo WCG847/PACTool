@@ -5,6 +5,12 @@ import tempfile
 import os
 import subprocess
 from decimal import Decimal, ROUND_HALF_UP
+import sys
+
+def resource_path(relative):
+    if hasattr(sys, "_MEIPASS"):
+        return os.path.join(sys._MEIPASS, relative)
+    return os.path.join(os.path.abspath("."), relative)
 
 
 def human_size(n: int) -> str:
@@ -33,9 +39,10 @@ class PAC:
 		self.root = tk.Tk()
 		self.root.geometry("640x480")
 		self.root.title("PACTool")
-		self.folder = PhotoImage(file="folder_16x16.png")
-		self.file = PhotoImage(file="file_16x16.png")
-		self.save = PhotoImage(file="save16x16.png")
+		self.folder = PhotoImage(file=resource_path("folder_16x16.png"))
+		self.file   = PhotoImage(file=resource_path("file_16x16.png"))
+		self.save   = PhotoImage(file=resource_path("save16x16.png"))
+
 		self.build()
 
 	def build(self):

@@ -27,7 +27,9 @@
   <ItemGroup>
     <Compile Include="gui\main.py" />
     <Compile Include="gui\pac.py" />
+    <Compile Include="gui\__init__.py" />
     <Compile Include="logic\file.py" />
+    <Compile Include="logic\__init__.py" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
